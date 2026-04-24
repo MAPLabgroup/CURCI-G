@@ -4,3 +4,5 @@ Overview:
 -output folder contains outputs of the data organization scripts
 -scripts folder contains the data organization scripts, as well as the script for creating figures
 -analysis was done in JASP using data files in output folder per the procedure outlined in the supplemental text
+
+DOI: 10.5281/zenodo.19740268

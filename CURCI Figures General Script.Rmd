@@ -1,0 +1,831 @@
+---
+title: "CURCI Figures"
+output: html_document
+date: "2024-06-08"
+---
+
+```{r setup, include=FALSE #Libraries and fonts}
+knitr::opts_chunk$set(echo = FALSE)
+library(readr)
+options(readr.show_col_types = FALSE)
+library(tidyr)
+library(influence.ME)
+library(MuMIn)
+library(car)
+library(reshape2)
+library(gdata)
+library(dplyr)
+library(afex)
+library(ggplot2)
+install.packages("debug")
+library(plotrix)
+library(showtext)
+font_add_google("Quicksand", family = "Quicksand")
+showtext_auto()
+```
+
+```{r #Retrace SME by Shape}
+
+CURCI <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final_CURCIG_FP_procrustes.csv")
+CURCI$Shape = factor(CURCI$Shape)
+
+CURCI_red <- (CURCI %>%
+  group_by(ID,Shape) %>%
+  #group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+gd <- (CURCI %>%
+  group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+gdstde <- (CURCI %>%
+  group_by(Shape) %>%
+  summarise(stde = std.error(Mean_SME, na.rm = TRUE)))
+
+windows.options(width = 1, height = 1, reset = FALSE) 
+SMEbyShape <- ggplot(CURCI_red, aes(x = Shape, y = Mean_SME,fill=Shape,color=Shape)) + 
+  geom_point() + 
+  #geom_errorbar(data = gd, aes(x = Shape, ymin=Mean_SME-unlist(gdstde[,2]),ymax=Mean_SME+unlist(gdstde[,2])), width=.5, color = "black") + 
+  geom_line(aes(group = CURCI_red$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  ylim(0,25) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbyShape)
+
+```
+
+```{r #Retrace SME by Object}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_FP_i_procrustes.csv")
+
+Shapes = "Trapezoid" # Blank, Square, or Trapezoid
+#CURCI_indv <- subset(CURCI_indv,Shape==Shapes) #Uncomment to subset shapes
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+CURCI_indvS <- subset(CURCI_indv,Shape=="Square")
+CURCI_indvT <- subset(CURCI_indv,Shape=="Trapezoid")
+
+gd2 <- (CURCI_indv %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+#Uncomment for double line graph
+gd2.S <- (CURCI_indvS %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+gd2.T <- (CURCI_indvT %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+ObjectbyObjectSME <- ggplot(CURCI_redob, aes(x = Object, y = ObjectSME,fill=Object,colour=Object)) + 
+  geom_point(size = .5) + 
+  #geom_line(data = gd2, stat = "identity", alpha = 1, show.legend = TRUE) +
+  geom_line(data = gd2.S, stat = "identity", alpha = 1, show.legend = TRUE,colour="red") + #uncomment 4 double line graph
+  geom_line(data = gd2.T, stat = "identity", alpha = 1, show.legend = TRUE,colour="blue") + #uncomment 4 double line graph
+  #geom_bar(data = gd2, stat = "identity", alpha = .1) + #comment for double line graph
+  theme_bw() +
+  ylim(0,25) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = "Object Order") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(ObjectbyObjectSME)
+```
+
+```{r #Retrace SME by Even Odd}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCIBehDataindvR.csv")
+
+#Shapes = "Trapezoid" # Blank, Square, or Trapezoid
+#CURCI_indv <- subset(CURCI_indv,Shape==Shapes) #Uncomment to subset shapes
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,EvenOdd) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+CURCI_indvS <- subset(CURCI_indv,Shape=="Square")
+CURCI_indvT <- subset(CURCI_indv,Shape=="Trapezoid")
+
+gd2 <- (CURCI_indv %>%
+  group_by(EvenOdd) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+SMEbyEvenOdd <- ggplot(CURCI_redob, aes(x = EvenOdd, y = ObjectSME,fill=EvenOdd,color=EvenOdd)) + 
+  geom_point(size = .5) + 
+  geom_bar(data = gd2, stat = "identity", alpha = .1) + #comment for double line graph
+  theme_bw() + 
+  ylim(0,25) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = "Object Order") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbyEvenOdd)
+```
+
+```{r #Retrace Narrow vs. Wide}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_FP_i_procrustes.csv")
+CURCI_indv <- subset(CURCI_indv,Shape=="Trapezoid")
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gd <- (CURCI_indv %>%
+  group_by(NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+NarrowvsWide <- ggplot(CURCI_redob, aes(x = NarWide, y = ObjectSME,fill=NarWide,color=NarWide)) + 
+  geom_point(size = 2) + 
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  geom_line(aes(group = CURCI_redob$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  ylim(0,25) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(NarrowvsWide)
+
+```
+
+```{r #Retrace Indv Object Order Comparisons}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_FP_i_procrustes.csv")
+
+CURCI_indv <- subset(CURCI_indv, Object==6 | Object==4 | Object==2)
+CURCI_indv <- subset(CURCI_indv, NarWide != "Wide")
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+CURCI_redob$NarWide <- factor(CURCI_redob$NarWide, levels=c("Square", "Wide", "Narrow"))
+
+CURCI_redob <- subset(CURCI_redob, ObjectSME < 15)
+
+gd <- (CURCI_indv %>%
+  group_by(NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+indvnarwide <- ggplot(CURCI_redob, aes(x = NarWide, y = ObjectSME,fill=NarWide,color=NarWide)) + 
+  geom_point(size = 2) + 
+  #geom_errorbar(aes(min=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  geom_line(aes(group = CURCI_redob$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  ylim(0,25) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Narrow vs. Square (First-Person)",
+    y = expression("SME "[FP]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(indvnarwide)
+```
+
+```{r #Retrace Heatmaps}
+
+Environments <- list("A1A","A1B","A2A","A2B","B1A","B1B","B2A","B2B")
+
+for (Environment in Environments)
+{
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/EXEsPT/CompletePTDataIndv.csv")
+CURCI_Retracekey <- read_csv("C:/Users/clm/Documents/EXEsPT/RetraceKey.csv")
+
+CURCI_Retrace <- subset(CURCI_PTindv,env==Environment)
+CURCI_Retracekey.env <- subset(CURCI_Retracekey,env==Environment)
+
+Loop <- c(1,2,3,4)
+Retraces <- c("Retrace One", "Retrace Two", "Retrace Three", "Average Retrace")
+RetraceX <- colnames(CURCI_Retrace)[16:19]
+RetraceY <- colnames(CURCI_Retrace)[20:23]
+
+for (Retrace in Loop)
+
+{
+
+png(file=paste("C:/Users/clm/Documents/EXEsPT/RetraceHeatMaps/",Environment,as.character(Retraces[Retrace]),".png",sep=""),
+width=600, height=600)
+  
+RetraceXNow <- RetraceX[Retrace]
+RetraceYNow <- RetraceY[Retrace]
+
+Retraceindv.env <- ggplot(CURCI_Retrace, aes(x = .data[[RetraceXNow]], y = .data[[RetraceYNow]])) +
+  geom_point(size = 1) +
+  geom_point(data=CURCI_Retracekey.env, aes(x = x_cor, y = y_cor),color="red",size=2) +
+  xlim(-40,40) +
+  ylim(-40,40) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = paste(Environment,as.character(Retraces[Retrace])),
+    y = "Y Coordinate",
+    x = "X Coordinate") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(Retraceindv.env)
+
+dev.off()
+
+}
+}
+
+```
+
+```{r #PT Heatmaps}
+
+Environments <- list("A1A","A1B","A2A","A2B","B1A","B1B","B2A","B2B")
+
+for (Environment in Environments)
+
+{
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/EXEsPT/CompletePTDataIndv.csv")
+CURCI_PTkey <- read_csv("C:/Users/clm/Documents/EXEsPT/PTKey.csv")
+
+CURCI_PTindv.env <- subset(CURCI_PTindv,env==Environment)
+CURCI_PTkey.env <- subset(CURCI_PTkey,env==Environment)
+
+png(file=paste("C:/Users/clm/Documents/EXEsPT/PTHeatMaps/",Environment,".png",sep=""),
+width=600, height=600)
+
+PTindv.env <- ggplot(CURCI_PTindv.env, aes(x = x_cor, y = y_cor)) +
+  geom_point(size = 1) +
+  geom_point(data=CURCI_PTkey.env,color="red",size=2) +
+  xlim(-800,100) +
+  ylim(-300,600) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = Environment,
+    y = "Y Coordinate",
+    x = "X Coordinate") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTindv.env)
+
+dev.off()
+
+}
+```
+
+```{r #PT SME by Shape}
+
+CURCI_PT <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final_CURCIG_O_procrustes.csv")
+
+titled = "Overhead"
+#CURCI_PT <- subset(CURCI_PT,SOD>=4) #change to filter for SOD
+
+CURCI_redPT <- (CURCI_PT %>%
+  group_by(ID,Shape) %>%
+  #group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+gdPT <- (CURCI_PT %>%
+  group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+PTSMEbyShape <- ggplot(CURCI_redPT, aes(x = Shape, y = Mean_SME,fill=Shape,color=Shape)) +
+  geom_point(size = 2) + 
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  geom_line(aes(group = CURCI_redPT$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gdPT, stat = "identity", alpha = .1) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTSMEbyShape)
+```
+
+```{r #PT SME by Object} 
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_O_i_procrustes.csv")
+
+Shapes = "Trapezoid"
+#CURCI_PTindv <- subset(CURCI_PTindv,Shape==Shapes) #to subset the shapes
+
+CURCI_PTredob <- (CURCI_PTindv %>%
+  group_by(ID,Object) %>%
+  #group_by(Shape) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+CURCI_indvPT.S <- subset(CURCI_PTindv,Shape=="Square")
+CURCI_indvPT.T <- subset(CURCI_PTindv,Shape=="Trapezoid")
+
+gdPT2 <- (CURCI_PTindv %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gdPT2.S <- (CURCI_indvPT.S %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+gdPT2.T <- (CURCI_indvPT.T %>%
+  group_by(Object) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+PTObjectbyObjectSME <- ggplot(CURCI_PTredob, aes(x = Object, y = ObjectSME,fill=Object,color=Object)) + 
+  geom_point(size = .5) + 
+  #geom_line(data = gdPT2, stat = "identity", alpha = 1, show.legend = TRUE) +
+  geom_line(data = gdPT2.S, stat = "identity", alpha = 1, show.legend = TRUE,color="red") +
+  geom_line(data = gdPT2.T, stat = "identity", alpha = 1, show.legend = TRUE,color="blue") +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = "Object Order") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTObjectbyObjectSME)
+```
+
+```{r #PT SME by EvenOdd} 
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/EXEsPT/CompletePTDataIndv.csv")
+
+#Shapes = "Square"
+#CURCI_PTindv <- subset(CURCI_PTindv,shape==Shapes) #to subset the shapes
+
+CURCI_PTredob <- (CURCI_PTindv %>%
+  group_by(id,evenodd) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+CURCI_indvPT.S <- subset(CURCI_PTindv,shape=="Square")
+CURCI_indvPT.T <- subset(CURCI_PTindv,shape=="Trapezoid")
+
+gdPT2 <- (CURCI_PTindv %>%
+  group_by(evenodd) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+PTSMEbyEvenOdd <- ggplot(CURCI_PTredob, aes(x = evenodd, y = euclidian,fill=evenodd,color=evenodd)) + 
+  geom_point(size = .5) + 
+  geom_bar(data = gdPT2, stat = "identity", alpha = .1) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = "Object Order") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTSMEbyEvenOdd)
+```
+
+```{r #PT Narrow vs. Wide}
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_O_i_procrustes.csv")
+CURCI_PTindv <- subset(CURCI_PTindv,Shape=="Trapezoid")
+#CURCI_PTindv <- subset(CURCI_PTindv,SOD>=4)
+
+CURCI_redob <- (CURCI_PTindv %>%
+  group_by(ID,NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gd <- (CURCI_PTindv %>%
+  group_by(NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+NarrowvsWide <- ggplot(CURCI_redob, aes(x = NarWide, y = ObjectSME,fill=NarWide,color=NarWide)) + 
+  geom_point(size = 2) + 
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  geom_line(aes(group = CURCI_redob$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(NarrowvsWide)
+
+```
+
+```{r #PT Indv Object Order Comparisons}
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final for R/Final_CURCIG_O_i_procrustes.csv")
+
+CURCI_PTindv <- subset(CURCI_PTindv, Object==6 | Object ==4 | Object==2)
+CURCI_PTindv <- subset(CURCI_PTindv, NarWide != "Wide")
+
+CURCI_redob <- (CURCI_PTindv %>%
+  group_by(ID,NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+CURCI_redob$NarWide <- factor(CURCI_redob$NarWide, levels=c("Square", "Wide", "Narrow"))
+
+gd <- (CURCI_PTindv %>%
+  group_by(NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+indvnarwide <- ggplot(CURCI_redob, aes(x = NarWide, y = ObjectSME,fill=NarWide,color=NarWide)) + 
+  geom_point(size = 2) + 
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  geom_line(aes(group = CURCI_redob$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Narrow vs. Square (Overhead)",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(indvnarwide)
+```
+
+```{r #SME by Environment}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCIBehDataindvR.csv")
+CURCI_indv <- subset(CURCI_indv, Path_Version=="A") #change for version
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,Environment) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gd2 <- (CURCI_indv %>%
+  group_by(Environment) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+SMEbyEnv <- ggplot(CURCI_redob, aes(x = Environment, y = ObjectSME,fill=Environment,color=Environment)) +
+  geom_point(size = .5) + 
+  geom_bar(data = gd2, stat = "identity", alpha = .1) + #comment for double line graph
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Version A", #change for version
+    y = "SME",
+    x = "Environment") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbyEnv)
+
+```
+
+```{r #SME by Path}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCIBehDataindvR.csv")
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,Path_Version) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gd2 <- (CURCI_indv %>%
+  group_by(Path_Version) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+SMEbyPath <- ggplot(CURCI_redob, aes(x = Path_Version, y = ObjectSME,fill=Path_Version,color=Path_Version)) +
+  geom_point(size = .5) + 
+  geom_bar(data = gd2, stat = "identity", alpha = .1) + #comment for double line graph
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    y = "SME",
+    x = "Path") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbyPath)
+
+```
+
+```{r #SME by Reptition}
+CURCI <- read_csv("C:/Users/clm/Documents/CURCIBehData2.csv")
+
+CURCI_red <- (CURCI %>%
+  group_by(ID,Repetition) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+gd <- (CURCI %>%
+  group_by(Repetition) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+SMEbyRepetition <- ggplot(CURCI_red, aes(x = Repetition, y = Mean_SME,fill=Repetition,color=Repetition)) + 
+  geom_point() + 
+  geom_line(aes(group = CURCI_red$ID), color = "black",alpha = .2 ) +
+  geom_bar(data = gd, stat = "identity", alpha = .1) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    y = "SME",
+    x = "Repetition") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbyRepetition)
+```
+
+```{r #Retrace SME by SOD}
+CURCI <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final_CURCIG_FP_procrustes.csv")
+CURCI$Shape = factor(CURCI$Shape)
+
+#Shapes = "Low" # Blank, Square, or Trapezoid
+#CURCI <- subset(CURCI,Shape==Shapes) #Uncomment to subset shapes
+#CURCI <- subset(CURCI,SOD<4)
+
+CURCI_red <- (CURCI %>%
+  group_by(ID,SOD) %>%
+  #group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+SMEbySOD <- ggplot(CURCI_red, aes(x = SOD, y = Mean_SME,fill=SOD,color=SOD)) + 
+  geom_point() + 
+  geom_smooth(method=lm) +
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    ylim(0,15) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = "SOD") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(SMEbySOD)
+```
+
+```{r #PT SME by SOD}
+CURCI_PT <- read_csv("C:/Users/clm/Documents/CURCI-G Procrustes/Output - with scaling/Final_CURCIG_O_procrustes.csv")
+
+#titled = "All Low SOD Trapezoid" # Blank, Square, or Trapezoid
+#CURCI_PT <- subset(CURCI_PT,shape=="Square") #Uncomment to subset shapes
+#CURCI_PT <- subset(CURCI_PT,SOD<4) #Uncomment to subset SOD
+
+CURCI_redPT <- (CURCI_PT %>%
+  group_by(ID,SOD) %>%
+  #group_by(Shape) %>%
+  summarise(Mean_SME = mean(Mean_SME, na.rm = TRUE)))
+
+PTSMEbySOD <- ggplot(CURCI_redPT, aes(x = SOD, y = Mean_SME,fill=SOD,color=SOD)) + 
+  geom_point() + 
+  geom_smooth(method=lm) +
+  #geom_errorbar(aes(ymin=Mean_SME-std.error(), ymax=Mean_SME+sd), width=.2,
+                 #position=position_dodge(.9)) + 
+  theme_bw() + 
+  ylim(0,250) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = "SOD") + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTSMEbySOD)
+```
+
+```{r #Retrace Narrow vs. Wide BOXPLOT}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCIBehDataindvR.csv")
+CURCI_indv <- subset(CURCI_indv,Shape=="Trapezoid")
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gd <- (CURCI_redob %>%
+  group_by(NarWide) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gdstde <- (CURCI_redob %>%
+  group_by(NarWide) %>%
+  summarise(stde = std.error(ObjectSME, na.rm = TRUE)))
+
+NarrowvsWide <- ggplot(CURCI_redob, aes(x = NarWide, y = ObjectSME,fill=NarWide,color=NarWide)) +
+  geom_boxplot(alpha = .35) + 
+  ylim(0,25) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "First-Person",
+    y = expression("SME "[FP]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(NarrowvsWide)
+
+#rev = subset(CURCI_redob,NarWide=="Narrow")
+#rev = subset(CURCI_redob,NarWide=="Wide")
+
+```
+
+```{r #PT Narrow vs. Wide BOXPLOT}
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/Other/EXEsPT/CompletePTDataIndv.csv")
+CURCI_PTindv <- subset(CURCI_PTindv,Shape=="Trapezoid")
+#CURCI_PTindv <- subset(CURCI_PTindv,SOD>=4)
+
+CURCI_redob <- (CURCI_PTindv %>%
+  group_by(ID,NarWide) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gd <- (CURCI_redob %>%
+  group_by(NarWide) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gdstde <- (CURCI_redob %>%
+  group_by(NarWide) %>%
+  summarise(stde = std.error(euclidian, na.rm = TRUE)))
+
+NarrowvsWide <- ggplot(CURCI_redob, aes(x = NarWide, y = euclidian,fill=NarWide,color=NarWide)) + 
+  geom_boxplot(alpha= .35) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Overhead",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(NarrowvsWide)
+
+ptIQR = subset(CURCI_redob,NarWide=="Narrow")
+IQR(ptIQR$euclidian, na.rm = TRUE)
+
+```
+
+```{r #Retrace Indv Object Order Comparisons BOXPLOT}
+
+CURCI_indv <- read_csv("C:/Users/clm/Documents/CURCIBehDataindvR.csv")
+
+CURCI_indv <- subset(CURCI_indv, Object==6 | Object==4 | Object==2)
+CURCI_indv <- subset(CURCI_indv, NarWide != "Wide")
+
+CURCI_redob <- (CURCI_indv %>%
+  group_by(ID,Shape) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+CURCI_redob <- subset(CURCI_redob, ObjectSME < 15)
+
+gd <- (CURCI_redob %>%
+  group_by(Shape) %>%
+  summarise(ObjectSME = mean(ObjectSME, na.rm = TRUE)))
+
+gdstde <- (CURCI_redob %>%
+  group_by(Shape) %>%
+  summarise(stde = std.error(ObjectSME, na.rm = TRUE)))
+
+indvnarwide <- ggplot(CURCI_redob, aes(x = Shape, y = ObjectSME,fill=Shape,color=Shape)) +
+  geom_boxplot(alpha = .35) +
+  ylim(0,25) +
+  theme_bw() + 
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Wide vs. Square (First-Person)",
+    y = expression("SME "[FP]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(indvnarwide)
+```
+
+```{r #PT Indv Object Order Comparisons BOXPLOT}
+
+CURCI_PTindv <- read_csv("C:/Users/clm/Documents/Other/EXEsPT/CompletePTDataIndv.csv")
+
+CURCI_PTindv <- subset(CURCI_PTindv, Object==6 | Object ==4 | Object==2)
+CURCI_PTindv <- subset(CURCI_PTindv, NarWide != "Wide")
+
+CURCI_redob <- (CURCI_PTindv %>%
+  group_by(ID,Shape) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gd <- (CURCI_PTindv %>%
+  group_by(Shape) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gdstde <- (CURCI_redob %>%
+  group_by(Shape) %>%
+  summarise(stde = std.error(euclidian, na.rm = TRUE)))
+
+indvnarwide <- ggplot(CURCI_redob, aes(x = Shape, y = euclidian,fill=Shape,color=Shape)) + 
+  geom_boxplot(alpha = .35) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Wide vs. Square (Overhead)",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(indvnarwide)
+```
+
+```{r #PT SME by Shape BOXPLOT}
+
+CURCI_PT <- read_csv("C:/Users/clm/Documents/Other/EXEsPT/CompletePTData.csv")
+
+titled = "Overhead"
+CURCI_PT <- subset(CURCI_PT,SOD<4.6) #change to filter for SOD
+
+CURCI_redPT <- (CURCI_PT %>%
+  group_by(ID,Shape) %>%
+  #group_by(Shape) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gd <- (CURCI_redPT %>%
+  group_by(Shape) %>%
+  summarise(euclidian = mean(euclidian, na.rm = TRUE)))
+
+gdstde <- (CURCI_redPT %>%
+  group_by(Shape) %>%
+  summarise(stde = std.error(euclidian, na.rm = TRUE)))
+
+PTSMEbyShape <- ggplot(CURCI_redPT, aes(x = Shape, y = euclidian,fill=Shape,color=Shape)) +
+  geom_boxplot(alpha = .35) +
+  theme_bw() + 
+  ylim(0,400) +
+  theme(legend.position="none") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  labs(
+    title = "Low SOD (Overhead)",
+    y = expression("SME "[O]),
+    x = NULL) + 
+  theme(text=element_text(size=16,  family="Quicksand"))
+
+plot(PTSMEbyShape)
+
+IQR = subset(CURCI_redPT,Shape=="Square")
+IQR(IQR$euclidian, na.rm = TRUE)
+```
+
+
+
+
